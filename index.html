@@ -57,8 +57,8 @@ a{color:var(--ac)}
 
 <script>
 // ====== НАСТРОЙКИ: вставьте свои значения из Supabase (Project Settings -> API) ======
-var SUPABASE_URL = 'https://ВАШ-ПРОЕКТ.supabase.co';
-var SUPABASE_KEY = 'ВАШ-ANON-PUBLIC-KEY';
+var SUPABASE_URL = 'https://kglfexnaoyzjqxdwffdi.supabase.co';
+var SUPABASE_KEY = 'sb_publishable_QkhZEnohNNAEEJuK35M6UA_XwWThGj2';
 // =====================================================================================
 
 var sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -128,7 +128,7 @@ $('add').addEventListener('click', add);
 $('showlogin').addEventListener('click', function(e){ e.preventDefault(); $('login').hidden = false; $('em').focus() });
 $('go').addEventListener('click', async function(){
   var r = await sb.auth.signInWithPassword({email: $('em').value.trim(), password: $('pw').value});
-  if (r.error) $('lmsg').textContent = 'Неверный логин или пароль.';
+  if (r.error) $('lmsg').textContent = 'Ошибка входа: ' + r.error.message;
   else { $('pw').value = ''; setAuth(true) }
 });
 $('out').addEventListener('click', async function(){ await sb.auth.signOut(); setAuth(false) });
