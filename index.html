@@ -13,7 +13,7 @@ body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.4 system-ui,-appl
 main{max-width:760px;margin:0 auto;padding:16px}
 h1{font-size:22px;margin:4px 0 12px}
 input,button{font:inherit}
-input[type=text],input[type=search],input[type=email],input[type=password]{width:100%;padding:12px;border:1px solid var(--bd);border-radius:10px;background:var(--card);color:var(--tx)}
+input[type=text],input[type=search]{width:100%;padding:12px;border:1px solid var(--bd);border-radius:10px;background:var(--card);color:var(--tx)}
 button{padding:11px 16px;border:0;border-radius:10px;background:var(--ac);color:#fff;cursor:pointer}
 button.sec{background:transparent;color:var(--mut);border:1px solid var(--bd)}
 button:disabled{opacity:.6}
@@ -24,7 +24,6 @@ button:disabled{opacity:.6}
 .card p{margin:0;color:var(--mut)}
 .row{display:flex;gap:8px;align-items:center;margin-top:10px}
 .mut{color:var(--mut);font-size:14px}
-a{color:var(--ac)}
 </style>
 </head>
 <body>
@@ -32,37 +31,31 @@ a{color:var(--ac)}
 <h1>🔦 Школьная кладовая</h1>
 <input type="search" id="q" placeholder="Поиск: например, фонарик" autocomplete="off">
 
-<div id="bar" class="mut" style="margin:8px 0"><a href="#" id="showlogin">Войти, чтобы добавлять видео</a></div>
-
-<div id="login" class="box" hidden>
-  <strong>Вход</strong>
-  <label for="em">Логин (email)</label><input type="email" id="em" autocomplete="username">
-  <label for="pw">Пароль</label><input type="password" id="pw" autocomplete="current-password">
-  <div class="row"><button id="go">Войти</button></div>
-  <div id="lmsg" class="mut" style="margin-top:6px"></div>
-</div>
+<div id="list"></div>
+<div id="empty" class="mut" hidden></div>
 
 <div id="admin" class="box" hidden>
   <strong>Добавить предмет</strong>
   <label for="name">Название (например, фонарик)</label><input type="text" id="name">
   <label for="where">Где лежит (необязательно)</label><input type="text" id="where">
   <label for="file">Видео (до 50 МБ)</label><input type="file" id="file" accept="video/*">
-  <div class="row"><button id="add">Сохранить</button><button class="sec" id="out">Выйти</button></div>
+  <div class="row"><button id="add">Сохранить</button><button class="sec" id="cancel">Закрыть</button></div>
   <div id="msg" class="mut" style="margin-top:6px"></div>
 </div>
 
-<div id="list"></div>
-<div id="empty" class="mut" hidden></div>
+<div style="text-align:center;margin:40px 0 20px">
+  <button id="open" class="sec" style="padding:4px 9px;font-size:12px;opacity:.6">+ добавить видео</button>
+</div>
 </main>
 
 <script>
-// ====== НАСТРОЙКИ: вставьте свои значения из Supabase (Project Settings -> API) ======
+// ====== НАСТРОЙКИ Supabase ======
 var SUPABASE_URL = 'https://kglfexnaoyzjqxdwffdi.supabase.co';
 var SUPABASE_KEY = 'sb_publishable_QkhZEnohNNAEEJuK35M6UA_XwWThGj2';
-// =====================================================================================
+// ================================
 
 var sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-var items = [], authed = false;
+var items = [];
 var $ = function(id){return document.getElementById(id)};
 
 function videoUrl(p){return sb.storage.from('videos').getPublicUrl(p).data.publicUrl}
@@ -77,12 +70,6 @@ function render(){
     var h = document.createElement('h2'); h.textContent = i.name;
     c.appendChild(v); c.appendChild(h);
     if (i.place) { var p = document.createElement('p'); p.textContent = '📍 ' + i.place; c.appendChild(p) }
-    if (authed) {
-      var r = document.createElement('div'); r.className = 'row';
-      var b = document.createElement('button'); b.className = 'sec'; b.textContent = 'Удалить';
-      b.onclick = function(){ if (confirm('Удалить «' + i.name + '»?')) remove(i) };
-      r.appendChild(b); c.appendChild(r);
-    }
     list.appendChild(c);
   });
   var e = $('empty');
@@ -93,12 +80,6 @@ function render(){
 async function load(){
   var r = await sb.from('items').select('*').order('name');
   if (!r.error) { items = r.data; render() }
-}
-
-async function remove(i){
-  await sb.storage.from('videos').remove([i.path]);
-  var r = await sb.from('items').delete().eq('id', i.id);
-  if (r.error) alert('Не удалось удалить'); else load();
 }
 
 async function add(){
@@ -117,24 +98,12 @@ async function add(){
   $('add').disabled = false;
 }
 
-function setAuth(on){
-  authed = on;
-  $('admin').hidden = !on; $('bar').hidden = on; $('login').hidden = true;
-  render();
-}
-
 $('q').addEventListener('input', render);
 $('add').addEventListener('click', add);
-$('showlogin').addEventListener('click', function(e){ e.preventDefault(); $('login').hidden = false; $('em').focus() });
-$('go').addEventListener('click', async function(){
-  var r = await sb.auth.signInWithPassword({email: $('em').value.trim(), password: $('pw').value});
-  if (r.error) $('lmsg').textContent = 'Ошибка входа: ' + r.error.message;
-  else { $('pw').value = ''; setAuth(true) }
-});
-$('out').addEventListener('click', async function(){ await sb.auth.signOut(); setAuth(false) });
-
-sb.auth.getSession().then(function(r){ setAuth(!!r.data.session) });
+$('open').addEventListener('click', function(){ $('admin').hidden = false; $('admin').scrollIntoView({behavior:'smooth'}) });
+$('cancel').addEventListener('click', function(){ $('admin').hidden = true });
 load();
 </script>
 </body>
 </html>
+
